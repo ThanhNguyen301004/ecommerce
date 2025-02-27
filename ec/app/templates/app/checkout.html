@@ -1,0 +1,94 @@
+{% extends 'app/base.html' %}
+{% load static %}
+{% block title %}Buy Now{% endblock title %}
+
+{% block main-content %}
+<div class="container">
+    {% if messages %}
+        {% for msg in messages %}
+            <div class="alert alert-danger" role="alert">
+                {{ msg }}
+            </div>
+        {% endfor %}
+    {% endif %}
+    <div class="row mt-5">
+        <div class="col-sm-6">
+            <h4>Tóm tắt đơn hàng</h4>
+            <hr>
+            {% for item in cart_items %}
+                <div class="card mb-2">
+                    <div class="card-body">
+                        <h5>Mặt hàng: {{ item.product.title }}</h5>
+                        <p>Số lượng: {{ item.quantity }}</p>
+                        <p class="fw-bold">Chi phí: {{ item.product.discounted_price }}</p>
+                    </div>
+                </div>
+            {% endfor %}
+            <p class="fw-bold">Tổng chi phí + 40đ= {{ totalamount }}</p>
+        </div>
+        <div class="col-sm-4 offset-sm-1">
+            <h4>Chọn địa chỉ giao hàng</h4>
+            <hr>
+            <form method="post" id="myform">
+                {% csrf_token %}
+                {% for ad in add %}
+                    <div class="card mb-2">
+                        <div class="card-body">
+                            <h5>{{ ad.name }}</h5>
+                            <p>Số điện thoại: {{ ad.mobile }}</p>
+                            <p>{{ ad.address }}, {{ ad.city }}, {{ ad.state }}, {{ ad.pincode }}</p>
+                        </div>
+                    </div>
+                    <div class="form-check mt-2 mb-5">
+                        <input class="form-check-input" type="radio" name="address" id="custadd{{ forloop.counter }}"
+                               value="{{ ad.id }}">
+                        <label class="form-check-label fw-bold" for="custadd{{ forloop.counter }}">
+                            Địa chỉ: {{ forloop.counter }}
+                        </label>
+                    </div>
+                {% endfor %}
+                <div class="form-check mb-3">
+                    <label for="totamount" class="form-label">Tổng chi phí</label>
+                    <input type="number" class="form-control" name="totamount" value="{{ totalamount }}" readonly>
+                </div>
+                <div class="text-end">
+                    <button id="rzp-button1" type="submit" class="btn btn-warning mt-3 px-5 fw-bold">Đặt hàng</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock main-content %}
+
+{% block payment-gateway %}
+<script>
+    var options = {
+        "key": "rzp_test_LxRqAytA5m1RfA", // Enter the Key ID generated from the Dashboard
+        "amount": "{{ razoramount }}", // Amount is in currency subunits. Default currency is INR. Hence, 50000 refers to 50000 paise
+        "currency": "INR",
+        "name": "Acme Corp",
+        "description": "Test Transaction",
+        "image": "https://example.com/your_logo",
+        "order_id": "{{ order_id }}", //This is a sample Order ID. Pass the `id` obtained in the response of Step 1
+        "handler": function (response) {
+            console.log("success");
+            console.log(response);
+            var form = document.getElementById("myform");
+            var address = form.elements["address"].value;
+            window.location.href = '/paymentdone?order_id=' + response.razorpay_order_id + '&payment_id=' + response.razorpay_payment_id + '&address=' + address;
+        },
+        "theme": {
+            "color": "#3399cc"
+        }
+    };
+    var rzp1 = new Razorpay(options);
+    rzp1.on('payment.failed', function (response) {
+        alert(response.error.description);
+    });
+    document.getElementById('rzp-button1').onclick = function (e) {
+        console.log("button click");
+        rzp1.open();
+        e.preventDefault();
+    }
+</script>
+{% endblock payment-gateway %}

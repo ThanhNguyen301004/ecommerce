@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard</title>
+    <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body>
+    <div class="container">
+        <h1 class="my-4">Dashboard</h1>
+
+        <div class="row">
+            <div class="col-md-6">
+                <div class="card mb-4">
+                    <div class="card-body">
+                        <h5 class="card-title">Tổng doanh thu</h5>
+                        <p class="card-text">{{ total_revenue }}đ</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-6">
+                <div class="card mb-4">
+                    <div class="card-body">
+                        <h5 class="card-title">Doanh thu hôm nay</h5>
+                        <p class="card-text">{{ daily_revenue }}đ</p>
+                        <h5 class="card-title">Doanh thu hôm qua</h5>
+                        <p class="card-text">{{ yesterday_revenue }}đ</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-6">
+                <div class="card mb-4">
+                    <div class="card-body">
+                        <h5 class="card-title">Số lượng đơn hàng hôm nay</h5>
+                        <p class="card-text">{{ daily_order }} đơn hàng</p>
+                        <h5 class="card-title">Số lượng đơn hàng hôm qua</h5>
+                        <p class="card-text">{{ yesterday_order }} đơn hàng</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <h1>Doanh thu theo ngày</h1>
+        <canvas id="dailyRevenueChart" width="400" height="200"></canvas>
+        <canvas id="dailyOrderChart" width="400" height="200"></canvas>
+        
+
+        <div class="row">
+            <div class="col-md-6">
+                <div class="card mb-4">
+                    <div class="card-body">
+                        <h5 class="card-title">Doanh thu theo sản phẩm</h5>
+                        <ul class="list-group"> 
+                            {% for category in category_revenue %} 
+                            <li class="list-group-item">
+                                {{ category.product__category }}: {{ category.total_revenue }}đ
+                            </li> 
+                            {% endfor %} 
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-6">
+                <div class="card mb-4">
+                    <div class="card-body">
+                        <h5 class="card-title">Doanh thu theo thành phố/ tỉnh</h5>
+                        <ul class="list-group"> 
+                            {% for state in state_revenue %} 
+                            <li class="list-group-item">
+                                {{ state.customer__state }}: {{ state.total_revenue }}đ
+                            </li> 
+                            {% endfor %} 
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.9.2/dist/umd/popper.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  
+    <script>
+        // Lấy dữ liệu từ context
+        const dailyRevenueData = {{ daily_revenue_data|safe }};
+        
+        // Tạo mảng nhãn cho các ngày
+        const labels = [];
+        const today = new Date();
+        for (let i = 0; i < 7; i++) {
+            const date = new Date(today);
+            date.setDate(today.getDate() - i);
+            labels.unshift(date.toLocaleDateString());
+        }
+
+        // Tạo biểu đồ
+        const ctx = document.getElementById('dailyRevenueChart').getContext('2d');
+        const dailyRevenueChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: 'Doanh thu theo ngày',
+                    data: dailyRevenueData,
+                    backgroundColor: 'rgba(75, 192, 192, 0.2)',
+                    borderColor: 'rgba(75, 192, 192, 1)',
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                scales: {
+                    y: {
+                        beginAtZero: true
+                    }
+                }
+            }
+        });
+        
+    </script>

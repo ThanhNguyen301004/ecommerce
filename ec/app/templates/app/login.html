@@ -1,0 +1,65 @@
+{% extends 'app/base.html' %}
+{% load static %}
+{% block title %}Login{% endblock title %}
+
+{% block main-content %}
+<div class="container">
+    <div class="row my-3">
+        <div class="col-sm-6 offset-sm-3">
+            <h3>Đăng nhập</h3>
+            <hr>
+            <form action="" method="post" novalidate class="shadow p-5">
+                {% csrf_token %}
+                {% for fm in form %}
+                    {{fm.label_tag}} {{fm}} <small class="text-danger">{{fm.errors|striptags}}</small> <br>
+                {% endfor %}
+
+                <small><a href="{% url 'password_reset' %}">Quên mật khẩu ?</a></small>
+                <br>
+                <div class="d-flex justify-content-between align-items-center mt-4">
+                    <input type="submit" class="btn btn-primary" value="Đăng nhập" name="" id="">
+                    <button type="button" class="btn btn-success" id="face-login-btn">
+                        <i class="fas fa-face-smile"></i> Đăng nhập bằng Face ID
+                    </button>
+                </div>
+                <div class="text-center text-primary fw-bold">
+                    <small>Chưa có tài khoản ? <a href="{% url 'customerregistration' %}" class="text-danger">Đăng ký</a></small>
+                </div>
+
+                {% if form.non_field_errors %}
+                    {% for error in form.non_field_errors %}
+                        <p class="alert alert-danger my-3">{{error}}</p>
+                    {% endfor %}
+                {% endif %}
+            </form>
+        </div>
+    </div>
+</div>
+
+
+<script>
+    document.getElementById('face-login-btn').addEventListener('click', function() {
+        fetch('/login-with-face-id/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': '{{ csrf_token }}' 
+            },
+            body: JSON.stringify({}) 
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert(data.message);
+                window.location.href = '/'; 
+            } else {
+                alert(data.error); 
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('An error occurred during face recognition.');
+        });
+    });
+</script>
+{% endblock main-content %}

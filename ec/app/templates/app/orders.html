@@ -1,0 +1,52 @@
+{% extends 'app/base.html' %}
+{% load static %}
+{% block title %}Mua ngay{% endblock title %}
+
+{% block main-content %}
+    <div class="container my-5">
+        <div class="row">
+            <h3>Chào mừng <span class="text-capitalize">{{ request.user }}</span></h3>
+            <div class="col-sm-2 border-end">
+                <ul class="list-unstyled">
+                    <li class="d-grid"><a href="{% url 'orders' %}" class="btn btn-primary">Đơn hàng</a></li>
+                </ul>
+            </div>
+            <div class="col-sm-9 offset-sm-1">
+                {% for op in order_placed %}
+                    <div class="row mb-3 border p-2">
+                        <div class="col-sm-2">
+                            <img src="{{ op.product.product_image.url }}" class="img-fluid" height="100" width="100" alt="{{ op.product.title }}">
+                        </div>
+                        <div class="col-sm-7">
+                            <p>Mặt hàng: {{ op.product.title }}</p>
+                            <p>Số lượng: {{ op.quantity }}</p>
+                            <p>Giá: ₫{{ op.total_cost }}</p>
+                        </div>
+                        <div class="col-sm-3">
+                            <p>Trạng thái: {{ op.status }}</p>
+                            <div class="progress">
+                                {% if op.status == "Chờ xác nhận" %}
+                                    <div class="progress-bar bg-warning" role="progressbar" style="width: 20%;" aria-valuenow="20" aria-valuemin="0" aria-valuemax="100"></div>
+                                {% elif op.status == "Đã chấp nhận" %}
+                                    <div class="progress-bar bg-info" role="progressbar" style="width: 40%;" aria-valuenow="40" aria-valuemin="0" aria-valuemax="100"></div>
+                                {% elif op.status == "Đang Đóng gói" %}
+                                    <div class="progress-bar bg-primary" role="progressbar" style="width: 60%;" aria-valuenow="60" aria-valuemin="0" aria-valuemax="100"></div>
+                                {% elif op.status == "Đang giao hàng" %}
+                                    <div class="progress-bar bg-success" role="progressbar" style="width: 80%;" aria-valuenow="80" aria-valuemin="0" aria-valuemax="100"></div>
+                                {% elif op.status == "Đã giao hàng" %}
+                                    <div class="progress-bar bg-success" role="progressbar" style="width: 100%;" aria-valuenow="100" aria-valuemin="0" aria-valuemax="100"></div>
+                                {% elif op.status == "Hủy đơn" %}
+                                     <div class="progress-bar bg-danger" role="progressbar" style="width: 100%;" aria-valuenow="100" aria-valuemin="0" aria-valuemax="100"></div>
+                                {% else %}
+                                    <div class="progress-bar" role="progressbar" style="width: 0%;" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"></div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                {% empty %}
+                    <p>Bạn chưa có đơn hàng nào.</p>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+{% endblock main-content %}
