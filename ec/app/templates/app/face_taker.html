@@ -12,38 +12,16 @@
         <button type="submit" class="btn btn-primary btn-lg" id="face-taker-btn">Bắt đầu chụp</button>
       </form>
       <div id="status" class="mt-3"></div>
-      <div id="camera-container" class="mt-3"></div>
     </div>
   </div>
 </div>
 
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script>
-  $(document).ready(function() {
-    $('#face-taker-btn').click(function(event) {
-      event.preventDefault();
-      const video = $('<video></video>').attr('id', 'camera').attr('width', '640').attr('height', '480').attr('autoplay', true);
-      $('#camera-container').html(video);
-
-      if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
-        navigator.mediaDevices.getUserMedia({ video: true }).then(function(stream) {
-          video[0].srcObject = stream;
-          video[0].play();
-        });
-      } else {
-        alert('Sorry, camera not supported.');
-      }
+  fetch('/face-taker-btn')
+    .then(response => response.json())
+    .then(data => {
+      alert(data.message);
     });
-  });
 </script>
 {% endblock main-content %}
-
-{% block styles %}
-<style>
-  #camera-container {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-  }
-</style>
-{% endblock styles %}

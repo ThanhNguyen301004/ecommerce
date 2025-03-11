@@ -21,7 +21,7 @@ import razorpay
 from .models import Customer, Payment, Product, Cart, Wishlist, OrderPlaced
 from .forms import CustomerRegistrationForm, CustomerProfileForm
 from ec.settings import *
-from django.db.models import Sum, Count
+from django.db.models import Sum
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
@@ -517,7 +517,6 @@ def face_taker(request):
         try:
             face_name = request.user.username
             customer = get_object_or_404(Customer, user=request.user)
-            print(customer.has_face_taker)
             if customer.has_face_taker:
                 return JsonResponse({'status': 'error', 'message': 'Bạn đã chụp khuôn mặt'}, status=400)
 
@@ -578,9 +577,19 @@ def face_taker(request):
             
     return render(request, 'app/face_taker.html')
 
-@csrf_exempt 
+@csrf_exempt
 def login_with_face_id(request):
     try:
+        if request.method != 'POST':
+            return JsonResponse({'error': 'Invalid request method'}, status=400)
+
+        if 'image' not in request.FILES:
+            return JsonResponse({'error': 'No image provided'}, status=400)
+
+        image_file = request.FILES['image']
+        image = Image.open(image_file)
+        image = np.array(image.convert('L'))
+
         recognizer = cv2.face.LBPHFaceRecognizer_create()
         if not os.path.exists(PATHS['trainer_file']):
             return JsonResponse({'error': 'Face model not trained yet'}, status=400)
@@ -590,22 +599,13 @@ def login_with_face_id(request):
         if face_cascade.empty():
             return JsonResponse({'error': 'Cannot load face cascade classifier'}, status=500)
 
-        cam = cv2.VideoCapture(CAMERA['index'])
-        if not cam.isOpened():
-            return JsonResponse({'error': 'Cannot initialize camera'}, status=500)
-
         names = {}
         if os.path.exists(PATHS['names_file']):
             with open(PATHS['names_file'], 'r') as f:
                 names = json.load(f)
 
-        ret, img = cam.read()
-        if not ret:
-            return JsonResponse({'error': 'Cannot capture frame'}, status=500)
-
-        gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
         faces = face_cascade.detectMultiScale(
-            gray,
+            image,
             scaleFactor=FACE_DETECTION['scale_factor'],
             minNeighbors=FACE_DETECTION['min_neighbors'],
             minSize=FACE_DETECTION['min_size']
@@ -615,8 +615,8 @@ def login_with_face_id(request):
             return JsonResponse({'error': 'No face detected'}, status=400)
 
         x, y, w, h = faces[0]
-        face_roi = gray[y:y+h, x:x+w]
-        
+        face_roi = image[y:y+h, x:x+w]
+
         id, confidence = recognizer.predict(face_roi)
         print(confidence)
         if confidence <= 80:
@@ -641,85 +641,3 @@ def login_with_face_id(request):
     except Exception as e:
         logger.error(f"Error during face recognition login: {e}")
         return JsonResponse({'error': str(e)}, status=500)
-    
-    finally:
-        if 'cam' in locals():
-            cam.release()
-        cv2.destroyAllWindows()         
-# def login_with_face_id(request):
-#     try:
-#         recognizer = cv2.face.LBPHFaceRecognizer_create()
-#         if not os.path.exists(PATHS['trainer_file']):
-#             return JsonResponse({'error': 'Face model not trained yet'}, status=400)
-#         recognizer.read(PATHS['trainer_file'])
-
-#         face_cascade = cv2.CascadeClassifier(PATHS['cascade_file'])
-#         if face_cascade.empty():
-#             return JsonResponse({'error': 'Cannot load face cascade classifier'}, status=500)
-
-#         cam = cv2.VideoCapture(CAMERA['index'])
-#         if not cam.isOpened():
-#             return JsonResponse({'error': 'Cannot initialize camera'}, status=500)
-
-#         names = {}
-#         if os.path.exists(PATHS['names_file']):
-#             with open(PATHS['names_file'], 'r') as f:
-#                 names = json.load(f)
-
-#         while True:
-#             ret, img = cam.read()
-#             if not ret:
-#                 return JsonResponse({'error': 'Cannot capture frame'}, status=500)
-
-#             gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-#             faces = face_cascade.detectMultiScale(
-#                 gray,
-#                 scaleFactor=FACE_DETECTION['scale_factor'],
-#                 minNeighbors=FACE_DETECTION['min_neighbors'],
-#                 minSize=FACE_DETECTION['min_size']
-#             )
-
-#             if len(faces) == 0:
-#                 continue  
-
-#             for (x, y, w, h) in faces:
-#                 face_roi = gray[y:y+h, x:x+w]
-#                 id, confidence = recognizer.predict(face_roi)
-#                 print(confidence)
-#                 n = 0
-#                 if confidence <= 60 & n < 30:
-#                     user_id = str(id)
-#                     if n >= 30:
-#                         return JsonResponse({'error': 'Face not recognized'}, status=400)
-#                     if user_id in names:
-#                         username = names[user_id]
-#                         try:
-#                             user = User.objects.get(username=username)
-#                             login(request, user)
-#                             cam.release()
-#                             cv2.destroyAllWindows()
-#                             return JsonResponse({
-#                                 'success': True,
-#                                 'message': f'Successfully logged in as {username}',
-#                                 'confidence': confidence
-#                             })
-#                         except User.DoesNotExist:
-#                             cam.release()
-#                             cv2.destroyAllWindows()
-#                             return JsonResponse({'error': 'User not found in database'}, status=404)
-#                     else:
-#                         cam.release()
-#                         cv2.destroyAllWindows()
-#                         return JsonResponse({'error': 'Unknown user ID'}, status=400)
-#                 else:
-#                     continue  # Face not recognized, continue to next frame
-
-#     except Exception as e:
-#         logger.error(f"Error during face recognition login: {e}")
-#         return JsonResponse({'error': str(e)}, status=500)
-    
-#     finally:
-#         if 'cam' in locals():
-#             cam.release()
-#         cv2.destroyAllWindows()
-

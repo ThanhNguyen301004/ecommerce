@@ -36,29 +36,62 @@
     </div>
 </div>
 
+<!-- Adding the camera feed for face recognition -->
+<div class="container">
+    <div class="row my-3">
+        <div class="col-sm-6 offset-sm-3">
+            <h3>Camera Feed</h3>
+            <video id="video" width="100%" height="480" autoplay></video>
+            <canvas id="canvas" style="display:none;"></canvas>
+        </div>
+    </div>
+</div>
 
 <script>
-    document.getElementById('face-login-btn').addEventListener('click', function() {
-        fetch('/login-with-face-id/', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRFToken': '{{ csrf_token }}' 
-            },
-            body: JSON.stringify({}) 
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                alert(data.message);
-                window.location.href = '/'; 
-            } else {
-                alert(data.error); 
-            }
+    // Start the camera stream
+    navigator.mediaDevices.getUserMedia({ video: true })
+        .then(stream => {
+            const video = document.getElementById('video');
+            video.srcObject = stream;
+            video.play();
         })
         .catch(error => {
-            console.error('Error:', error);
-            alert('An error occurred during face recognition.');
+            console.error('Error accessing the camera:', error);
+            alert('An error occurred while accessing the camera.');
+        });
+
+    // Capture the frame and send to server
+    document.getElementById('face-login-btn').addEventListener('click', function() {
+        const canvas = document.getElementById('canvas');
+        const video = document.getElementById('video');
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
+        canvas.getContext('2d').drawImage(video, 0, 0, canvas.width, canvas.height);
+
+        canvas.toBlob(blob => {
+            const formData = new FormData();
+            formData.append('image', blob, 'frame.png');
+
+            fetch('/login-with-face-id/', {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': '{{ csrf_token }}'
+                },
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert(data.message);
+                    window.location.href = '/';
+                } else {
+                    alert(data.error);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('An error occurred during face recognition.');
+            });
         });
     });
 </script>
